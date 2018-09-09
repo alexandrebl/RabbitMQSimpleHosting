@@ -54,14 +54,14 @@ namespace RabbitMQSimpleHosting.Messaging
                         {
                             try
                             {
-                                instance.Process(message, new CancellationToken());
+                                instance.ProcessAsync(message, new CancellationToken()).Wait(cancellationToken);
                                 queueManager.Consumer.Ack(deliveryTag);
                             }
                             catch (Exception exception)
                             {
-                                _logger?.LogError(exception, $"Error on receive message for queue {_queueName}");
-
                                 queueManager.Consumer.Nack(deliveryTag, false);
+
+                                _logger?.LogError(exception, $"Error on receive message for queue {_queueName}");
                             }
                         };
 
@@ -70,9 +70,9 @@ namespace RabbitMQSimpleHosting.Messaging
                             exception,
                             deliveryTag) =>
                         {
-                            _logger?.LogError(exception, $"Unable to process message for queue {_queueName}. Error message: {exception.Message}");
-
                             queueManager.Consumer.Nack(deliveryTag, false);
+
+                            _logger?.LogError(exception, $"Unable to process message for queue {_queueName}. Error message: {exception.Message}");
                         };
 
                     queueManager.Consumer.WatchInit();
