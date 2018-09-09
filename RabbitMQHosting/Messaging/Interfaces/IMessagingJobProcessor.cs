@@ -5,6 +5,6 @@ namespace RabbitMQSimpleHosting.Messaging.Interfaces
 {
     public interface IMessagingJobProcessor<in TMessage>
     {
-        Task Process(TMessage message, CancellationToken cancellationToken);
+        Task ProcessAsync(TMessage message, CancellationToken cancellationToken);
     }
 }
