@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using RabbitMQSimpleConnectionFactory.Entity;
+using RabbitMQSimpleConnectionFactory.Library;
 using RabbitMQSimpleConsumer;
 using RabbitMQSimpleHosting.Hosting.Interfaces;
 using RabbitMQSimpleHosting.Messaging.Interfaces;
@@ -39,9 +40,14 @@ namespace RabbitMQSimpleHosting.Messaging
         {
             try
             {
+
+                string connectionName = this.GetConnectionName();
+
+                var channelFactory = new ChannelFactory(_connectionSetting, connectionName);
+
                 for (var index = 0; index < _attribute.ConsumerCount; index++)
                 {
-                    var queueManager = new QueueManager<TMessage>(_queueName).WithConnectionSetting(_connectionSetting)
+                    var queueManager = new QueueManager<TMessage>(_queueName).WithChannelFactory(channelFactory)
                         .WithConsumer(prefetchCount: _attribute.Prefetch);
 
                     var scope = _services.CreateScope();
@@ -82,6 +88,16 @@ namespace RabbitMQSimpleHosting.Messaging
             {
                 _logger?.LogError(exception, $"Unable to create ProcessingWorker for queue {_queueName}");
             }
+        }
+
+        private string GetConnectionName()
+        {
+            Type processorType = typeof(TProcessor);
+            var assemblyName = processorType.Assembly.GetName();
+            string app = assemblyName.Name;
+            string version = assemblyName.Version.ToString();
+
+            return $"{app}({version})@{Environment.MachineName}/{this._connectionSetting.VirtualHost}/{processorType.Name}-Consumer";
         }
     }
 }
